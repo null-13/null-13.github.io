@@ -1,217 +1,219 @@
 class Conrand
 
-  nodeArray: null
-  canvas: null
-  drawingContext: null
+	nodeArray: null
+	canvas: null
+	drawingContext: null
 
-  #graphics parameters
+	#graphics parameters
 
-  canvasheight: window.innerHeight
-  canvaswidth: window.innerWidth
+	canvasheight: window.innerHeight
+	canvaswidth: window.innerWidth
 
-  #game parameters
-  
-  tickLength: 100
-  initialnodes: 200
-  adjacentDistance: 36
-  vibration: 4
-  paused: false
+	#game parameters
 
-  constructor: ->
-    @createCanvas()
-    @seed()
-    @tick()
+	tickLength: 100
+	initialnodes: 200
+	neighborhood: 36
+	noise: 4
+	loneliness: 1
+	crowdedness: 5
+	paused: false
 
-  createCanvas: ->
-    @canvas = document.createElement 'canvas'
-    document.body.appendChild @canvas
-    @canvas.height = @canvasheight
-    @canvas.width = @canvaswidth
-    @canvas.setAttribute('tabindex', 0)
-    @drawingContext = @canvas.getContext '2d'
+	constructor: ->
+		@createCanvas()
+		@seed()
+		@tick()
 
-    @canvas.addEventListener 'click', (e) =>
-      rect = @canvas.getBoundingClientRect()
-      clickX = e.clientX - rect.left
-      clickY = e.clientY - rect.top
-      @nodeArray.push(@createCircle(clickX, clickY, 2))
-      
-    @canvas.addEventListener 'keydown', (e) =>
-      if e.keyCode is 32
-        @paused = !@paused
-    
-  seed: ->
-    @nodeArray = []
+	createCanvas: ->
+		@canvas = document.createElement 'canvas'
+		document.body.appendChild @canvas
+		@canvas.height = @canvasheight
+		@canvas.width = @canvaswidth
+		@canvas.setAttribute('tabindex', 0)
+		@drawingContext = @canvas.getContext '2d'
 
-    for node in [0...@initialnodes]
-      @nodeArray[node] =
-      @createSeedCircle()
+		@canvas.addEventListener 'click', (e) =>
+			rect = @canvas.getBoundingClientRect()
+			clickX = e.clientX - rect.left
+			clickY = e.clientY - rect.top
+			@nodeArray.push(@createCircle(clickX, clickY, 2))
 
-  createSeedCircle: ->
-    @createCircle(this.canvas.width * Math.random(), this.canvas.height * Math.random(), 2)
+		@canvas.addEventListener 'keydown', (e) =>
+			if e.keyCode is 32
+				@paused = !@paused
 
-  createCircle: (x, y, r) ->
-    { xPos: x, yPos: y, radius: r, alive: true }
+	seed: ->
+		@nodeArray = []
 
-  tick: =>
-    
-    if @paused is false
-      @cull()
-      @vibrate()
-      @evolve()
+		for node in [0...@initialnodes]
+			@nodeArray[node] =
+			@createSeedCircle()
 
-    @draw()
+	createSeedCircle: ->
+		@createCircle(this.canvas.width * Math.random(), this.canvas.height * Math.random(), 2)
 
-    setTimeout @tick, @tickLength
+	createCircle: (x, y, r) ->
+		{ xPos: x, yPos: y, radius: r, alive: true }
 
-  vibrate: ->
+	tick: =>
 
-    for node in @nodeArray
-      node.xPos = node.xPos + ((Math.random() - 0.5) * 2 * @vibration)
-      node.yPos = node.yPos + ((Math.random() - 0.5) * 2 * @vibration)
-      @rectifyNode node
+		if @paused is false
+			@cull()
+			@vibrate()
+			@evolve()
 
-  evolve: ->
+		@draw()
 
-    newArray = []
+		setTimeout @tick, @tickLength
 
-    if @nodeArray.length == 0
-      @seed()
+	vibrate: ->
 
-    for node in @nodeArray
+		for node in @nodeArray
+			node.xPos = node.xPos + ((Math.random() - 0.5) * 2 * @noise)
+		node.yPos = node.yPos + ((Math.random() - 0.5) * 2 * @noise)
+		@rectifyNode node
 
-      if node.alive is true
+	evolve: ->
 
-        neighbors = @getNeighbors(node, @nodeArray, @adjacentDistance)
+		newArray = []
 
-        test = true
+		if @nodeArray.length <= 1
+			@seed()
 
-        for neighbor in neighbors
+		for node in @nodeArray
 
-          if @getNeighbors(neighbor, @nodeArray, @adjacentDistance).length != neighbors.length
-          
-            test = false
-            break
+			if node.alive is true
 
-        if test is true
+				neighbors = @getNeighbors(node, @nodeArray, @neighborhood)
 
-          theta = (Math.PI / 3) * neighbors.length
+				test = true
 
-          for neighbor in neighbors
-            
-            newNode = @thirdNode(node, neighbor, theta)
-            newArray.push(newNode)
+				for neighbor in neighbors
 
-    @nodeArray = @nodeArray.concat(newArray)
+					if @getNeighbors(neighbor, @nodeArray, @neighborhood).length != neighbors.length
 
-  cull: ->
+						test = false
+						break
 
-    for node in @nodeArray
+				if test is true
 
-      neighbors = @getNeighbors(node, @nodeArray, @adjacentDistance)
+					theta = (Math.PI / 3) * neighbors.length
 
-      if neighbors.length == 0 or neighbors.length > 5
+					for neighbor in neighbors
 
-        node.alive = false
+						newNode = @thirdNode(node, neighbor, theta)
+						newArray.push(newNode)
 
-    index = @nodeArray.length - 1
+		@nodeArray = @nodeArray.concat(newArray)
 
-    while (index >= 0)
-      if @nodeArray[index].alive is false
-        @nodeArray.splice(index, 1)
-        index--
-      index--
+	cull: ->
 
-  getDistance: (a, b) ->
+		for node in @nodeArray
 
-    xdiff = b.xPos - a.xPos
-    ydiff = b.yPos - a.yPos
-    sumOfSquares = Math.pow(xdiff, 2) + Math.pow(ydiff, 2)
+			neighbors = @getNeighbors(node, @nodeArray, @neighborhood)
 
-    return Math.sqrt(sumOfSquares)
+			if neighbors.length < @loneliness or neighbors.length > @crowdedness
 
-  getNeighbors: (node, array, distance) ->
+				node.alive = false
 
-    neighbors = []
+		index = @nodeArray.length - 1
 
-    for x in array
+		while (index >= 0)
+			if @nodeArray[index].alive is false
+				@nodeArray.splice(index, 1)
+				index--
+			index--
 
-      d = @getDistance(node, x)
+	getDistance: (a, b) ->
 
-      if d < distance and d > 1
-        neighbors.push x
+		xdiff = b.xPos - a.xPos
+		ydiff = b.yPos - a.yPos
+		sumOfSquares = Math.pow(xdiff, 2) + Math.pow(ydiff, 2)
 
-    return neighbors
+		return Math.sqrt(sumOfSquares)
 
-  rectifyNode: (node) ->
+	getNeighbors: (node, array, distance) ->
 
-    if node.xPos > @canvas.width
-      node.xPos = @canvas.width
+		neighbors = []
 
-    if node.yPos > @canvas.height
-      node.yPos = @canvas.height
+		for x in array
 
-    if node.xPos < 0
-      node.xPos = 0
+			d = @getDistance(node, x)
 
-    if node.yPos < 0
-      node.yPos = 0
+			if d < distance and d > 1
+				neighbors.push x
 
-  thirdNode: (node, pivot, theta) ->
+		return neighbors
 
-    s = Math.sin(theta)
-    c = Math.cos(theta)
+	rectifyNode: (node) ->
 
-    tX = node.xPos - pivot.xPos
-    tY = node.yPos - pivot.yPos
+		if node.xPos > @canvas.width
+			node.xPos = @canvas.width
 
-    newX = (tX * c) - (tY * s)
-    newY = (tX * s) + (tY * c)
+		if node.yPos > @canvas.height
+			node.yPos = @canvas.height
 
-    newX = newX + pivot.xPos
-    newY = newY + pivot.yPos
+		if node.xPos < 0
+			node.xPos = 0
 
-    newCircle = @createCircle(newX, newY, node.radius)
-    @rectifyNode newCircle
+		if node.yPos < 0
+			node.yPos = 0
 
-    return newCircle
+	thirdNode: (node, pivot, theta) ->
 
-  draw: ->
+		s = Math.sin(theta)
+		c = Math.cos(theta)
 
-    @drawingContext.clearRect(0, 0, @canvas.width, @canvas.height)
+		tX = node.xPos - pivot.xPos
+		tY = node.yPos - pivot.yPos
 
-    for node in @nodeArray
-      @drawConnections(node, @nodeArray, @adjacentDistance)
-      @drawCircle node
+		newX = (tX * c) - (tY * s)
+		newY = (tX * s) + (tY * c)
 
-  drawConnections: (node, array, distance) ->
+		newX = newX + pivot.xPos
+		newY = newY + pivot.yPos
 
-    neighbors = @getNeighbors(node, array, distance)
-    context = @drawingContext
-    context.lineWidth = 1
+		newCircle = @createCircle(newX, newY, node.radius)
+		@rectifyNode newCircle
 
-    if neighbors.length > 4
-      context.strokeStyle = 'white'
-    else if neighbors.length > 2
-      context.strokeStyle = 'rgb(242, 198, 65)'
-    else if neighbors.length > 0
-      context.strokeStyle = 'orange'
+		return newCircle
 
-    for x in neighbors
+	draw: ->
 
-      context.beginPath()
-      context.moveTo(node.xPos, node.yPos)
-      context.lineTo(x.xPos, x.yPos)
-      context.stroke()
+		@drawingContext.clearRect(0, 0, @canvas.width, @canvas.height)
 
-  drawCircle: (circle) ->
+		for node in @nodeArray
+			@drawConnections(node, @nodeArray, @neighborhood)
+			@drawCircle node
 
-    @drawingContext.fillStyle = 'white'
-    @drawingContext.lineWidth = 2
-    @drawingContext.strokeStyle = 'rgba(242, 198, 65, 0.1)'
-    @drawingContext.beginPath()
-    @drawingContext.arc(circle.xPos, circle.yPos, circle.radius, 0, 2 * Math.PI, false)
-    @drawingContext.fill()
-    @drawingContext.stroke()
+	drawConnections: (node, array, distance) ->
+
+		neighbors = @getNeighbors(node, array, distance)
+		context = @drawingContext
+		context.lineWidth = 1
+
+		if neighbors.length > 4
+			context.strokeStyle = 'white'
+		else if neighbors.length > 2
+			context.strokeStyle = 'rgb(242, 198, 65)'
+		else if neighbors.length > 0
+			context.strokeStyle = 'orange'
+
+		for x in neighbors
+
+			context.beginPath()
+			context.moveTo(node.xPos, node.yPos)
+			context.lineTo(x.xPos, x.yPos)
+			context.stroke()
+
+	drawCircle: (circle) ->
+
+		@drawingContext.fillStyle = 'white'
+		@drawingContext.lineWidth = 2
+		@drawingContext.strokeStyle = 'rgba(242, 198, 65, 0.1)'
+		@drawingContext.beginPath()
+		@drawingContext.arc(circle.xPos, circle.yPos, circle.radius, 0, 2 * Math.PI, false)
+		@drawingContext.fill()
+		@drawingContext.stroke()
 
 window.Conrand = Conrand
