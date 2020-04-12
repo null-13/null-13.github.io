@@ -2,6 +2,7 @@
 <html class="no-js" lang="en">
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sliders.css">
 <head>
     <script src="js/jquery-3.2.1.min.js"></script>
     <script> 
@@ -29,8 +30,81 @@
     </style>
     
     <div>Press spacebar to pause & unpause. Left click to add nodes.</div>
+    <br>
+
+    <p>Adjacency Distance (size of neighborhood)</p>
+
+    <div class="slidecontainer">
+      <input type="range" min="4" max="72" value="36" class="slider" id="slider_distance">
+      <p>Value: <span id="distance"></span></p>
+    </div>
+    <br>
+
+    <p>Loneliness (minimum neighbor count)</p>
+
+    <div class="slidecontainer">
+      <input type="range" min="0" max="9" value="1" class="slider" id="slider_lonely">
+      <p>Value: <span id="lonely"></span></p>
+    </div>
+    <br>
+
+    <p>Overcrowding (maximum neighbor count)</p>
+
+    <div class="slidecontainer">
+      <input type="range" min="1" max="9" value="5" class="slider" id="slider_crowded">
+      <p>Value: <span id="crowded"></span></p>
+    </div>
+    <br>
+
+    <p>Noise (random change in node position each tick)</p>
+
+    <div class="slidecontainer">
+      <input type="range" min="0" max="40" value="4" class="slider" id="slider_noise">
+      <p>Value: <span id="noise"></span></p>
+    </div>
+    <br>
 
     <script src="js/automata.js"></script>
+
+    <script>
+
+      var slider1 = document.getElementById("slider_distance");
+      var output1 = document.getElementById("distance");
+      output1.innerHTML = slider1.value;
+
+      var slider2 = document.getElementById("slider_lonely");
+      var output2 = document.getElementById("lonely");
+      output2.innerHTML = slider2.value;
+
+      var slider3 = document.getElementById("slider_crowded");
+      var output3 = document.getElementById("crowded");
+      output3.innerHTML = slider3.value;
+
+      var slider4 = document.getElementById("slider_noise");
+      var output4 = document.getElementById("noise");
+      output4.innerHTML = slider4.value;
+      
+      slider1.oninput = function(name, value) {
+        output1.innerHTML = this.value;
+        Conrand.prototype.neighborhood = output1.innerHTML;
+      }
+
+      slider2.oninput = function(name, value) {
+        output2.innerHTML = this.value;
+        Conrand.prototype.loneliness = output2.innerHTML;
+      }
+
+      slider3.oninput = function(name, value) {
+        output3.innerHTML = this.value;
+        Conrand.prototype.crowdedness = output3.innerHTML;
+      }
+
+      slider4.oninput = function(name, value) {
+        output4.innerHTML = this.value;
+        Conrand.prototype.noise = output4.innerHTML;
+      }
+
+      </script>
 
     <script type="text/javascript">
       new Conrand();
