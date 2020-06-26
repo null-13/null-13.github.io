@@ -125,9 +125,24 @@ class Conrand
 			}
 		}
 
-		neighBuckets = (index for index in neighBuckets when (index > 0 and index < @bucketCount))
+		neighBuckets = index for index in neighBuckets when (index > 0 and index < @bucketCount)
 
 		return neighBuckets
+
+	getNeighbors_buckets: (node, buckets, distance) ->
+
+		neighbors = []
+
+		for bucket in buckets
+
+			for x in bucket.nodeList
+
+				d = @getDistance(node, x)
+
+				if d < distance and d > 1
+					neighbors.push x
+
+		return neighbors
 
 	createSeedCircle: ->
 		@createCircle(this.canvas.width * Math.random(), this.canvas.height * Math.random(), 2)
